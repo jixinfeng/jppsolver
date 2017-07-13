@@ -60,6 +60,9 @@ class JppSolver(object):
     def solve(self):
         return self.solns
 
+    def place(self):
+        return {}
+
     def reset(self):
         self.graph = nx.Graph()
         self.order = 0

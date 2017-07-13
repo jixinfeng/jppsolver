@@ -80,25 +80,6 @@ class JppSolverIlp(JppSolver):
                 soln.append(i)
         return soln
 
-    def _genConnectedGraph(self, order, comm_radius):
-        DEFAULT_GRAPH_ORDER = 100
-        DEFAULT_COMM_RADIUS = 0.15
-        mag_ratio = np.sqrt(order / DEFAULT_GRAPH_ORDER)
-        if comm_radius < DEFAULT_COMM_RADIUS:
-            print("WARNING: this order, comm_radius combination may cause unpredictable long running time")
-
-        graph = nx.random_geometric_graph(order, comm_radius / mag_ratio)
-        while not nx.is_connected(graph):
-            graph = nx.random_geometric_graph(order, comm_radius / mag_ratio)
-
-        pos = nx.get_node_attributes(graph, 'pos')
-        for i in range(order):
-            pos[i] = tuple(j * mag_ratio for j in pos[i])
-
-        return nx.random_geometric_graph(n=order,
-                                         radius=comm_radius,
-                                         pos=pos)
-
     def _singlerow(self, N, K, i):
         """
         creat a matrix with exactly one row of 1s and others are 0
