@@ -57,11 +57,13 @@ class JppSolver(object):
         else:
             self.jam_radius = jam_radius
 
-    def solve(self):
-        return self.solns
+    def solve(self, k):
+        return []
 
     def place(self):
-        return {}
+        return {'jammer': [],
+                'jammed': [],
+                'clusters': []}
 
     def reset(self):
         self.graph = nx.Graph()

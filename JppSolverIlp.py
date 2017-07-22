@@ -64,10 +64,11 @@ class JppSolverIlp(JppSolver):
                                      reverse=True)
         clusters = []
         for i in range(k - 1):
-            clusters.append(connected_subgraphs[i])
+            clusters.append(list(connected_subgraphs[i]))
         clusters.append([])
         for i in range(k - 1, len(connected_subgraphs)):
-            clusters[-1].append(connected_subgraphs[i])
+            clusters[-1] += list(connected_subgraphs[i])
+        clusters[-1].sort()
 
         return {'jammer': jammer,
                 'jammed': jammed,
