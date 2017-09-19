@@ -4,12 +4,12 @@ import numpy as np
 from cvxopt.glpk import ilp
 from scipy.sparse import coo_matrix
 
-from JppSolver import JppSolver
+from Jpps import Jpps
 
 
-class JppSolverIlp(JppSolver):
+class JppsGlpkIlp(Jpps):
     def __init__(self, verbose=False):
-        JppSolver.__init__(self)
+        Jpps.__init__(self)
         if not verbose:
             cvxopt.glpk.options['msg_lev'] = 'GLP_MSG_OFF'
 

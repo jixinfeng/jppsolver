@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 
 
-class JppSolver(object):
+class Jpps(object):
     DEFAULT_GRAPH_ORDER = 100
     DEFAULT_COMM_RADIUS = 0.15
 

@@ -6,12 +6,12 @@ from numpy.linalg import eigh
 from pymetis import part_graph
 from sklearn.cluster import KMeans
 
-from JppSolver import JppSolver
+from Jpps import Jpps
 
 
-class JppSolverOjs(JppSolver):
+class JppsGlpkOjs(Jpps):
     def __init__(self, verbose=False, cut_function="metis"):
-        JppSolver.__init__(self)
+        Jpps.__init__(self)
         if not verbose:
             cvxopt.glpk.options['msg_lev'] = 'GLP_MSG_OFF'
         if cut_function == "metis":
