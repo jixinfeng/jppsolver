@@ -2,6 +2,7 @@ import networkx as nx
 import numpy as np
 import gurobipy as gurobi
 
+from time import clock
 from Jpps import Jpps
 
 
@@ -9,14 +10,14 @@ class JppsGrbIlp(Jpps):
     def __init__(self):
         Jpps.__init__(self)
 
-    def solve(self, ncluster, name="", verbose=False):
+    def solve(self, num_cluster, name="", verbose=False, cpu_time=False):
         model = gurobi.Model(name)
         model.setParam('OutputFlag', verbose)
 
-        if ncluster in self.solns:
+        if num_cluster in self.solns:
             return
 
-        bk = self.order / ncluster
+        bk = self.order / num_cluster
 
         net_apx = nx.random_geometric_graph(self.order,
                                             self.jam_radius,
@@ -37,11 +38,11 @@ class JppsGrbIlp(Jpps):
                                vtype=gurobi.GRB.BINARY,
                                name="jammed")
 
-        cluster_vars = model.addVars(ncluster, self.order,
-                                lb=0,
-                                up=1,
-                                vtype=gurobi.GRB.BINARY,
-                                name="x")
+        cluster_vars = model.addVars(num_cluster, self.order,
+                                     lb=0,
+                                     up=1,
+                                     vtype=gurobi.GRB.BINARY,
+                                     name="x")
 
         # set objective function
         # minimize the number of jammer needed
@@ -49,7 +50,9 @@ class JppsGrbIlp(Jpps):
 
         # add eq (1)
         # each vertex assigned to exactly 1 cluster
-        model.addConstrs((cluster_vars.sum("*", i) + jammed_vars[i] == 1 for i in range(self.graph.order())), name="eq1")
+        model.addConstrs((cluster_vars.sum("*", i) + jammed_vars[i] == 1
+                          for i in range(self.graph.order())),
+                         name="eq1")
 
         # add ieq (2)
         # at least 1 jammer
@@ -57,15 +60,15 @@ class JppsGrbIlp(Jpps):
 
         # add ieq (3)
         # no empty cluster
-        model.addConstrs((cluster_vars.sum(k, "*") >= 1 for k in range(ncluster)), name="ieq3")
+        model.addConstrs((cluster_vars.sum(k, "*") >= 1 for k in range(num_cluster)), name="ieq3")
 
         # add ieq (4)
-        # first cluster should be smaller than ceil(network_order/ncluster)
+        # first cluster should be smaller than ceil(network_order/num_cluster)
         model.addConstr(cluster_vars.sum(0, "*") <= bk, name="ieq4")
 
         # add ieq (5)
         # cluter size should be in non-increasing order
-        for k in range(ncluster - 1):
+        for k in range(num_cluster - 1):
             model.addConstr(lhs=cluster_vars.sum(k, "*"),
                             sense=gurobi.GRB.GREATER_EQUAL,
                             rhs=cluster_vars.sum(k + 1, "*"),
@@ -76,14 +79,16 @@ class JppsGrbIlp(Jpps):
         for i in range(self.order):
             model.addConstr(lhs=jammed_vars[i],
                             sense=gurobi.GRB.LESS_EQUAL,
-                            rhs=gurobi.LinExpr(apx[i].tolist()[0], [jammer_vars[j] for j in range(self.order)]),
+                            rhs=gurobi.LinExpr(apx[i].tolist()[0],
+                                               [jammer_vars[j] for j in range(self.order)]),
                             name="ieq6[" + str(i) + "]")
 
         # add ieq (7)
         # both ends of an edge should stay in same cluster unless one of them is jammed
-        for k in range(ncluster):
+        for k in range(num_cluster):
             for i, j in self.graph.edges():
-                model.addConstr(gurobi.LinExpr(cluster_vars[(k, i)] - cluster_vars[(k, j)] - jammed_vars[i] - jammed_vars[j]) <= 0,
+                model.addConstr(gurobi.LinExpr(cluster_vars[(k, i)] - cluster_vars[(k, j)] -
+                                               jammed_vars[i] - jammed_vars[j]) <= 0,
                                 name="ieq7[" + ",".join(map(str, [i, j, k])) + "]")
 
         # add ieq (8)
@@ -92,18 +97,24 @@ class JppsGrbIlp(Jpps):
                          name="ieq8")
 
         model.update()
+        t_0 = clock()
         model.optimize()
+        t_opt = clock() - t_0
         soln = [i for i, var in enumerate(model.getVars()[:self.graph.order()]) if int(var.x) == 1]
-        self.solns[ncluster] = soln
+        self.solns[num_cluster] = soln
+        if cpu_time:
+            return t_opt
+        else:
+            return
 
-    def place(self, ncluster):
+    def place(self, num_cluster):
         net_apx = nx.random_geometric_graph(self.order,
                                             self.jam_radius,
                                             pos=self.pos)
-        if ncluster in self.solns:
-            jammer = self.solns[ncluster]
+        if num_cluster in self.solns:
+            jammer = self.solns[num_cluster]
         else:
-            jammer = self.solve(ncluster)
+            jammer = self.solve(num_cluster)
         jammed = list(set.union(*[set(net_apx.neighbors(node))
                                   for node in jammer]))
         residue_graph = self.graph.copy()
@@ -112,10 +123,10 @@ class JppsGrbIlp(Jpps):
                                      key=len,
                                      reverse=True)
         clusters = []
-        for i in range(ncluster - 1):
+        for i in range(num_cluster - 1):
             clusters.append(list(connected_subgraphs[i]))
         clusters.append([])
-        for i in range(ncluster - 1, len(connected_subgraphs)):
+        for i in range(num_cluster - 1, len(connected_subgraphs)):
             clusters[-1] += list(connected_subgraphs[i])
         clusters[-1].sort()
 

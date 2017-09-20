@@ -4,6 +4,7 @@ import numpy as np
 from cvxopt.glpk import ilp
 from scipy.sparse import coo_matrix
 
+from time import clock
 from Jpps import Jpps
 
 
@@ -13,7 +14,7 @@ class JppsGlpkIlp(Jpps):
         if not verbose:
             cvxopt.glpk.options['msg_lev'] = 'GLP_MSG_OFF'
 
-    def solve(self, k):
+    def solve(self, k, cpu_time=False):
         if k in self.solns:
             return
         bk = self.order / k
@@ -31,6 +32,7 @@ class JppsGlpkIlp(Jpps):
         for var in range((k + 2) * N):
             binvars.add(var)
 
+        t_0 = clock()
         status, isol = ilp(c=cvxopt.matrix(c),
                            G=cvxopt.spmatrix(G.data,
                                              G.row,
@@ -44,8 +46,12 @@ class JppsGlpkIlp(Jpps):
                            b=cvxopt.matrix(b),
                            I=binvars,
                            B=binvars)
+        t_opt = clock() - t_0
         self.solns[k] = self._parse(isol)
-        return self.solns[k]
+        if cpu_time:
+            return t_opt
+        else:
+            return
 
     def place(self, k):
         net_apx = nx.random_geometric_graph(self.order,

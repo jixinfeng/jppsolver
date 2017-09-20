@@ -6,6 +6,7 @@ from numpy.linalg import eigh
 from pymetis import part_graph
 from sklearn.cluster import KMeans
 
+from time import clock
 from Jpps import Jpps
 
 
@@ -19,7 +20,7 @@ class JppsGlpkOjs(Jpps):
         elif cut_function == "spectral":
             self.cut_function = self._spectral_cut
 
-    def solve(self, k):
+    def solve(self, k, cpu_time=False):
         net_apx = nx.random_geometric_graph(self.order,
                                             self.jam_radius,
                                             pos=self.pos)
@@ -36,17 +37,22 @@ class JppsGlpkOjs(Jpps):
         binvars = set()
         for var in range(G_ext.order()):
             binvars.add(var)
+        t_0 = clock()
         status, isol = cvxopt.glpk.ilp(c=ilp_c,
                                        G=ilp_G,
                                        h=ilp_h,
                                        I=binvars,
                                        B=binvars)
+        t_opt = clock() - t_0
         nodeMap = {}
         for m, n in enumerate(G_ext.nodes()):
             nodeMap[m] = n
 
         self.solns[k] = list(map(lambda x: nodeMap[x], list(np.nonzero(isol)[0])))
-        return self.solns[k]
+        if cpu_time:
+            return t_opt
+        else:
+            return
 
     def place(self, k):
         net_apx = nx.random_geometric_graph(self.order,
