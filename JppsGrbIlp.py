@@ -10,7 +10,15 @@ class JppsGrbIlp(Jpps):
     def __init__(self):
         Jpps.__init__(self)
 
-    def solve(self, num_cluster, name="", verbose=False, num_threads=None, cpu_time=False, filename=None):
+    def solve(self,
+              num_cluster,
+              circles=None,
+              verbose=False,
+              num_threads=None,
+              cpu_time=False,
+              filename=None,
+              name="jpp"):
+
         model = gurobi.Model(name)
         model.setParam('OutputFlag', verbose)
         if num_threads:
@@ -21,14 +29,18 @@ class JppsGrbIlp(Jpps):
 
         bk = self.graph.order() / num_cluster
 
-        net_apx = nx.random_geometric_graph(self.graph.order(),
+        pos_apx = self.pos.copy()
+        if circles:
+            for circle in circles.values():
+                pos_apx[len(pos_apx)] = [circle[0], circle[1]]
+
+        net_apx = nx.random_geometric_graph(len(pos_apx),
                                             self.jam_radius,
-                                            pos=self.pos)
-
+                                            pos=pos_apx)
         apx = nx.adj_matrix(G=net_apx,
-                            nodelist=range(self.graph.order())) + np.eye(self.graph.order())
+                            nodelist=range(net_apx.order())) + np.eye(net_apx.order())
 
-        jammer_vars = model.addVars(self.graph.order(),
+        jammer_vars = model.addVars(net_apx.order(),
                                lb=0,
                                up=1,
                                vtype=gurobi.GRB.BINARY,
@@ -82,7 +94,7 @@ class JppsGrbIlp(Jpps):
             model.addConstr(lhs=jammed_vars[i],
                             sense=gurobi.GRB.LESS_EQUAL,
                             rhs=gurobi.LinExpr(apx[i].tolist()[0],
-                                               [jammer_vars[j] for j in range(self.graph.order())]),
+                                               [jammer_vars[j] for j in range(net_apx.order())]),
                             name="ieq6[" + str(i) + "]")
 
         # add ieq (7)

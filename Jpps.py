@@ -11,7 +11,6 @@ class Jpps(object):
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0
-        self.solns = {}
 
     def set_graph(self,
                   graph,
@@ -54,20 +53,11 @@ class Jpps(object):
         else:
             self.jam_radius = jam_radius
 
-    def solve(self, k):
-        return []
-
-    def place(self):
-        return {'jammer': [],
-                'jammed': [],
-                'clusters': []}
-
     def reset(self):
         self.graph = nx.Graph()
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0
-        self.solns = {}
 
     def _generate_connected_graph(self, order, comm_radius):
         mag_ratio = np.sqrt(order / self.DEFAULT_GRAPH_ORDER)
