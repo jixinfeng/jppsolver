@@ -10,35 +10,37 @@ class JppsGrbIlp(Jpps):
     def __init__(self):
         Jpps.__init__(self)
 
-    def solve(self, num_cluster, name="", verbose=False, cpu_time=False):
+    def solve(self, num_cluster, name="", verbose=False, num_threads=None, cpu_time=False, filename=None):
         model = gurobi.Model(name)
         model.setParam('OutputFlag', verbose)
+        if num_threads:
+            model.setParam("Threads", num_threads)
 
         if num_cluster in self.solns:
             return
 
-        bk = self.order / num_cluster
+        bk = self.graph.order() / num_cluster
 
-        net_apx = nx.random_geometric_graph(self.order,
+        net_apx = nx.random_geometric_graph(self.graph.order(),
                                             self.jam_radius,
                                             pos=self.pos)
 
         apx = nx.adj_matrix(G=net_apx,
                             nodelist=range(self.graph.order())) + np.eye(self.graph.order())
 
-        jammer_vars = model.addVars(self.order,
+        jammer_vars = model.addVars(self.graph.order(),
                                lb=0,
                                up=1,
                                vtype=gurobi.GRB.BINARY,
                                name="jammer")
 
-        jammed_vars = model.addVars(self.order,
+        jammed_vars = model.addVars(self.graph.order(),
                                lb=0,
                                up=1,
                                vtype=gurobi.GRB.BINARY,
                                name="jammed")
 
-        cluster_vars = model.addVars(num_cluster, self.order,
+        cluster_vars = model.addVars(num_cluster, self.graph.order(),
                                      lb=0,
                                      up=1,
                                      vtype=gurobi.GRB.BINARY,
@@ -76,11 +78,11 @@ class JppsGrbIlp(Jpps):
 
         # add ieq (6)
         # nodes close to jammers are jammed
-        for i in range(self.order):
+        for i in range(self.graph.order()):
             model.addConstr(lhs=jammed_vars[i],
                             sense=gurobi.GRB.LESS_EQUAL,
                             rhs=gurobi.LinExpr(apx[i].tolist()[0],
-                                               [jammer_vars[j] for j in range(self.order)]),
+                                               [jammer_vars[j] for j in range(self.graph.order())]),
                             name="ieq6[" + str(i) + "]")
 
         # add ieq (7)
@@ -93,22 +95,27 @@ class JppsGrbIlp(Jpps):
 
         # add ieq (8)
         # both nodes at jammers' locations should be jammed
-        model.addConstrs((jammer_vars[i] - jammed_vars[i] <= 0 for i in range(self.order)),
+        model.addConstrs((jammer_vars[i] - jammed_vars[i] <= 0 for i in range(self.graph.order())),
                          name="ieq8")
 
         model.update()
         t_0 = clock()
+
+        if filename:
+            model.write(filename)
+
         model.optimize()
         t_opt = clock() - t_0
         soln = [i for i, var in enumerate(model.getVars()[:self.graph.order()]) if int(var.x) == 1]
         self.solns[num_cluster] = soln
+
         if cpu_time:
             return t_opt
         else:
             return
 
     def place(self, num_cluster):
-        net_apx = nx.random_geometric_graph(self.order,
+        net_apx = nx.random_geometric_graph(self.graph.order(),
                                             self.jam_radius,
                                             pos=self.pos)
         if num_cluster in self.solns:

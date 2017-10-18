@@ -21,7 +21,7 @@ class JppsGlpkOjs(Jpps):
             self.cut_function = self._spectral_cut
 
     def solve(self, k, cpu_time=False):
-        net_apx = nx.random_geometric_graph(self.order,
+        net_apx = nx.random_geometric_graph(self.graph.order(),
                                             self.jam_radius,
                                             pos=self.pos)
         part_vert = self.cut_function(k)
@@ -55,7 +55,7 @@ class JppsGlpkOjs(Jpps):
             return
 
     def place(self, k):
-        net_apx = nx.random_geometric_graph(self.order,
+        net_apx = nx.random_geometric_graph(self.graph.order(),
                                             self.jam_radius,
                                             pos=self.pos)
         if k in self.solns:

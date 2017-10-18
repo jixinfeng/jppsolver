@@ -8,7 +8,6 @@ class Jpps(object):
 
     def __init__(self):
         self.graph = nx.Graph()
-        self.order = 0
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0
@@ -22,7 +21,6 @@ class Jpps(object):
             raise AttributeError("Graph not connected!")
         self.reset()
         self.graph = graph
-        self.order = graph.order()
         self.pos = nx.get_node_attributes(graph, 'pos')
         if graph.order() != len(self.pos):
             raise AttributeError("Node position does not match!")
@@ -49,7 +47,6 @@ class Jpps(object):
                          jam_radius=None):
         self.reset()
         self.graph = self._generate_connected_graph(order, comm_radius)
-        self.order = order
         self.pos = nx.get_node_attributes(self.graph, 'pos')
         self.comm_radius = comm_radius
         if jam_radius is None:
@@ -67,7 +64,6 @@ class Jpps(object):
 
     def reset(self):
         self.graph = nx.Graph()
-        self.order = 0
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0

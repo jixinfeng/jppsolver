@@ -17,7 +17,7 @@ class JppsGlpkIlp(Jpps):
     def solve(self, k, cpu_time=False):
         if k in self.solns:
             return
-        bk = self.order / k
+        bk = self.graph.order() / k
 
         N = self.graph.number_of_nodes()
         E = self.graph.number_of_edges()
@@ -54,7 +54,7 @@ class JppsGlpkIlp(Jpps):
             return
 
     def place(self, k):
-        net_apx = nx.random_geometric_graph(self.order,
+        net_apx = nx.random_geometric_graph(self.graph.order(),
                                             self.jam_radius,
                                             pos=self.pos)
         if k in self.solns:
@@ -82,7 +82,7 @@ class JppsGlpkIlp(Jpps):
 
     def _parse(self, isol):
         soln = []
-        for i, j in enumerate(isol[:self.order]):
+        for i, j in enumerate(isol[:self.graph.order()]):
             if int(j) == 1:
                 soln.append(i)
         return soln
@@ -251,7 +251,7 @@ class JppsGlpkIlp(Jpps):
         inc = np.array(nx.incidence_matrix(G=self.graph,
                                            nodelist=list(range(N))).todense())
 
-        net_apx = nx.random_geometric_graph(self.order,
+        net_apx = nx.random_geometric_graph(self.graph.order(),
                                             self.jam_radius,
                                             pos=self.pos)
         apx = np.array(nx.adjacency_matrix(G=net_apx,
