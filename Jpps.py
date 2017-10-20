@@ -11,6 +11,7 @@ class Jpps(object):
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0
+        self.solns = {}
 
     def set_graph(self,
                   graph,
