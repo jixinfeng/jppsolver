@@ -24,6 +24,8 @@ class JppsGrbIlp(Jpps):
         model.setParam('OutputFlag', verbose)
         if num_threads:
             model.setParam("Threads", num_threads)
+        else:
+            model.setParam("Threads", cpu_count())
 
         if num_cluster in self.solns:
             return
@@ -32,7 +34,7 @@ class JppsGrbIlp(Jpps):
 
         pos_apx = self.pos.copy()
         if circles:
-            for circle in circles.values():
+            for circle in sorted(circles.values()):
                 pos_apx[len(pos_apx)] = [circle[0], circle[1]]
 
         self.graph_apx = nx.random_geometric_graph(len(pos_apx),
