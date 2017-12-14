@@ -1,4 +1,4 @@
-from JppsGrbIlp import *
+from jppsolver.JppsGrbIlp import *
 from network100_1 import sample_pos_100
 from network100_1_circles import sample_pos_100_circle
 

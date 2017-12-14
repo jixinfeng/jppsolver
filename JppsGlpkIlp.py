@@ -5,7 +5,7 @@ from cvxopt.glpk import ilp
 from scipy.sparse import coo_matrix
 
 from time import clock
-from Jpps import Jpps
+from .Jpps import Jpps
 
 
 class JppsGlpkIlp(Jpps):

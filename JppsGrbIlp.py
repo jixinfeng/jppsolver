@@ -4,7 +4,7 @@ import gurobipy as gurobi
 
 from psutil import cpu_count
 from time import clock
-from Jpps import Jpps
+from .Jpps import Jpps
 
 
 class JppsGrbIlp(Jpps):

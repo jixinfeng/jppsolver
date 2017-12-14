@@ -7,7 +7,7 @@ from pymetis import part_graph
 from sklearn.cluster import KMeans
 
 from time import clock
-from Jpps import Jpps
+from .Jpps import Jpps
 
 
 class JppsGlpkOjs(Jpps):

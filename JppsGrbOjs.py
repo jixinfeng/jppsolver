@@ -7,10 +7,10 @@ from numpy.linalg import eigh
 
 from psutil import cpu_count
 from time import clock
-from Jpps import Jpps
+from .Jpps import Jpps
 
 
-class JppsGrbIlp(Jpps):
+class JppsGrbOjs(Jpps):
     def __init__(self):
         Jpps.__init__(self)
         self.graph_apx = None
@@ -45,10 +45,11 @@ class JppsGrbIlp(Jpps):
         apx = nx.adj_matrix(G=self.graph_apx,
                             nodelist=range(self.graph_apx.order())) + np.eye(self.graph_apx.order())
 
-        part_vert = self._spectral_cut(self.graph, num_cluster)
-        G_cut = self._part_to_cut(self.graph, part_vert)
+        part_vert = self._spectral_cut(num_cluster)
+        G_cut = self._part_to_cut(part_vert)
         G_ext = self.graph_apx.subgraph(list(set.union(*[set(self.graph_apx.neighbors(node))
                                                          for node in G_cut.nodes()])))
+
         Nei = nx.adjacency_matrix(G_ext, nodelist=G_ext.nodes()).todense() + np.diag(np.ones(G_ext.order()))
         Inc = np.transpose(nx.incidence_matrix(G_ext, edgelist=G_cut.edges()).todense())
 
@@ -131,19 +132,24 @@ class JppsGrbIlp(Jpps):
         if dimension >= self.graph.order() - 1:
             dimension = self.graph.order()
 
-        L = nx.normalized_laplacian_matrix(self.graph)
-        l, U = eigh(L)
+        lap = nx.normalized_laplacian_matrix(self.graph).todense()
+        e_values, e_vectors = eigh(lap)
 
-        eigs = {i: tuple(U[i, j + 1] for j in range(dimension)) for i in range(self.graph.order())}
+        # eigs = {i: tuple(e_vectors[i, j + 1]
+        #                  for j in range(dimension))
+        #         for i in range(self.graph.order())}
+        # X = np.array([e_coords[k] for k in range(len(e_coords))])
 
-        X = np.array(list(eigs.values()))
+        e_coordinates = np.array([[e_vectors[i, j + 1]
+                                   for j in range(dimension)]
+                                  for i in range(self.graph.order())])
+
         est = KMeans(k, init='random')
-        est.fit(X)
+        est.fit(e_coordinates)
         labels = est.labels_
         return labels
 
-    @staticmethod
-    def _part_to_cut(net, part_vert):
+    def _part_to_cut(self, part_vert):
         """
         Generate subgraph induced by edge cut get from vertex
         assignment list
@@ -152,8 +158,8 @@ class JppsGrbIlp(Jpps):
         output: nx graph
         """
         G_cut_nodes = set()
-        for edge in net.edges():
+        for edge in self.graph.edges():
             if part_vert[edge[0]] != part_vert[edge[1]]:
                 G_cut_nodes.add(edge[0])
                 G_cut_nodes.add(edge[1])
-        return net.subgraph(G_cut_nodes)
+        return self.graph.subgraph(G_cut_nodes)
