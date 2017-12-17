@@ -115,20 +115,21 @@ class JppsGrbIlp(Jpps):
                          name="ieq8")
 
         model.update()
-        t_0 = clock()
 
         if filename:
             model.write(filename)
 
+        t_0 = clock()
         model.optimize()
         t_opt = clock() - t_0
+
         soln = [i for i, var in enumerate(model.getVars()[:self.graph_apx.order()]) if int(var.x) == 1]
         self.solns[num_cluster] = soln
 
         if cpu_time:
             return t_opt
         else:
-            return
+            return model.Runtime
 
     def place(self, num_cluster):
         if num_cluster in self.solns:

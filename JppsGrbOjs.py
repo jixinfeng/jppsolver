@@ -42,8 +42,6 @@ class JppsGrbOjs(Jpps):
         self.graph_apx = nx.random_geometric_graph(len(pos_apx),
                                                    self.jam_radius,
                                                    pos=pos_apx)
-        apx = nx.adj_matrix(G=self.graph_apx,
-                            nodelist=range(self.graph_apx.order())) + np.eye(self.graph_apx.order())
 
         part_vert = self._spectral_cut(num_cluster)
         G_cut = self._part_to_cut(part_vert)
@@ -51,7 +49,6 @@ class JppsGrbOjs(Jpps):
                                                          for node in G_cut.nodes()])))
 
         Nei = nx.adjacency_matrix(G_ext, nodelist=G_ext.nodes()).todense() + np.diag(np.ones(G_ext.order()))
-        Inc = np.transpose(nx.incidence_matrix(G_ext, edgelist=G_cut.edges()).todense())
 
         node_map = {}
         node_inverse_map = {}
@@ -80,20 +77,21 @@ class JppsGrbOjs(Jpps):
                           for p, q in G_cut.edges()), name="ieq2")
 
         model.update()
-        t_0 = clock()
 
         if filename:
             model.write(filename)
 
+        t_0 = clock()
         model.optimize()
         t_opt = clock() - t_0
+
         soln = [node_map[i] for i, var in enumerate(model.getVars()) if int(var.x) == 1]
         self.solns[num_cluster] = soln
 
         if cpu_time:
             return t_opt
         else:
-            return
+            return model.Runtime
 
     def place(self, num_cluster):
         if num_cluster in self.solns:
