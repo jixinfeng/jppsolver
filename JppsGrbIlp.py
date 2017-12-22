@@ -39,8 +39,8 @@ class JppsGrbIlp(Jpps):
                 pos_apx[len(pos_apx)] = [circle[0], circle[1]]
 
         self.graph_apx = nx.random_geometric_graph(len(pos_apx),
-                                            self.jam_radius,
-                                            pos=pos_apx)
+                                                   self.jam_radius,
+                                                   pos=pos_apx)
         apx = nx.adj_matrix(G=self.graph_apx,
                             nodelist=range(self.graph_apx.order())) + np.eye(self.graph_apx.order())
 
@@ -130,28 +130,3 @@ class JppsGrbIlp(Jpps):
             return t_opt
         else:
             return model.Runtime
-
-    def place(self, num_cluster):
-        if num_cluster in self.solns:
-            jammer = self.solns[num_cluster]
-        else:
-            jammer = self.solve(num_cluster)
-        jammed = list(set.union(*[set(self.graph_apx.neighbors(node))
-                                  for node in jammer]) &
-                      set(range(self.graph.order())))
-        residue_graph = self.graph.copy()
-        residue_graph.remove_nodes_from(jammed)
-        connected_subgraphs = sorted(nx.connected_components(residue_graph),
-                                     key=len,
-                                     reverse=True)
-        clusters = []
-        for i in range(num_cluster - 1):
-            clusters.append(list(connected_subgraphs[i]))
-        clusters.append([])
-        for i in range(num_cluster - 1, len(connected_subgraphs)):
-            clusters[-1] += list(connected_subgraphs[i])
-        clusters[-1].sort()
-
-        return {'jammer': jammer,
-                'jammed': jammed,
-                'clusters': clusters}

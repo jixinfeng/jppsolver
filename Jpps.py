@@ -8,6 +8,7 @@ class Jpps(object):
 
     def __init__(self):
         self.graph = nx.Graph()
+        self.graph_apx = nx.Graph()
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0
@@ -59,6 +60,42 @@ class Jpps(object):
         self.pos = {}
         self.comm_radius = 0
         self.jam_radius = 0
+
+    def solve(self,
+              num_cluster,
+              circles=None,
+              verbose=False,
+              num_threads=None,
+              cpu_time=False,
+              filename=None,
+              name="jpp"):
+        self.solns[num_cluster] = [0]
+        return 0
+
+    def place(self, num_cluster):
+        if num_cluster in self.solns:
+            jammer = self.solns[num_cluster]
+        else:
+            jammer = self.solve(num_cluster)
+        jammed = list(set.union(*[set(self.graph_apx.neighbors(node))
+                                  for node in jammer]) &
+                      set(range(self.graph.order())))
+        residue_graph = self.graph.copy()
+        residue_graph.remove_nodes_from(jammed)
+        connected_subgraphs = sorted(nx.connected_components(residue_graph),
+                                     key=len,
+                                     reverse=True)
+        clusters = []
+        for i in range(num_cluster - 1):
+            clusters.append(list(connected_subgraphs[i]))
+        clusters.append([])
+        for i in range(num_cluster - 1, len(connected_subgraphs)):
+            clusters[-1] += list(connected_subgraphs[i])
+        clusters[-1].sort()
+
+        return {'jammer': jammer,
+                'jammed': jammed,
+                'clusters': clusters}
 
     def _generate_connected_graph(self, order, comm_radius):
         mag_ratio = np.sqrt(order / self.DEFAULT_GRAPH_ORDER)
