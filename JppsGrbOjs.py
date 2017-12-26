@@ -86,6 +86,9 @@ class JppsGrbOjs(Jpps):
         t_opt = clock() - t_0
 
         soln = [node_map[i] for i, var in enumerate(model.getVars()) if int(var.x) == 1]
+
+        assert model.status == 2
+
         self.solns[num_cluster] = soln
 
         if cpu_time:

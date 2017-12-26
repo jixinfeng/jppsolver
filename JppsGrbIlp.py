@@ -123,6 +123,8 @@ class JppsGrbIlp(Jpps):
         model.optimize()
         t_opt = clock() - t_0
 
+        assert model.status == 2
+
         soln = [i for i, var in enumerate(model.getVars()[:self.graph_apx.order()]) if int(var.x) == 1]
         self.solns[num_cluster] = soln
 
