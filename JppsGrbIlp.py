@@ -2,7 +2,7 @@ import networkx as nx
 import numpy as np
 import gurobipy as gurobi
 
-from psutil import cpu_count
+from os import cpu_count
 from time import clock
 from .Jpps import Jpps
 

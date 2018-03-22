@@ -5,7 +5,7 @@ import gurobipy as gurobi
 from sklearn.cluster import KMeans
 from numpy.linalg import eigh
 
-from psutil import cpu_count
+from os import cpu_count
 from time import clock
 from .Jpps import Jpps
 
