@@ -6,7 +6,7 @@ from numpy.linalg import eigh
 from pymetis import part_graph
 from sklearn.cluster import KMeans
 
-from time import clock
+from time import process_time
 from .Jpps import Jpps
 
 
@@ -37,13 +37,13 @@ class JppsGlpkOjs(Jpps):
         binvars = set()
         for var in range(G_ext.order()):
             binvars.add(var)
-        t_0 = clock()
+        t_0 = process_time()
         status, isol = cvxopt.glpk.ilp(c=ilp_c,
                                        G=ilp_G,
                                        h=ilp_h,
                                        I=binvars,
                                        B=binvars)
-        t_opt = clock() - t_0
+        t_opt = process_time() - t_0
         nodeMap = {}
         for m, n in enumerate(G_ext.nodes()):
             nodeMap[m] = n

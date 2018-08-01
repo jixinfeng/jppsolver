@@ -6,7 +6,7 @@ from sklearn.cluster import KMeans
 from numpy.linalg import eigh
 
 from os import cpu_count
-from time import clock
+from time import process_time
 from .Jpps import Jpps
 
 
@@ -81,9 +81,9 @@ class JppsGrbOjs(Jpps):
         if filename:
             model.write(filename)
 
-        t_0 = clock()
+        t_0 = process_time()
         model.optimize()
-        t_opt = clock() - t_0
+        t_opt = process_time() - t_0
 
         soln = [node_map[i] for i, var in enumerate(model.getVars()) if int(var.x) == 1]
 

@@ -4,7 +4,7 @@ import numpy as np
 from cvxopt.glpk import ilp
 from scipy.sparse import coo_matrix
 
-from time import clock
+from time import process_time
 from .Jpps import Jpps
 
 
@@ -32,7 +32,7 @@ class JppsGlpkIlp(Jpps):
         for var in range((k + 2) * N):
             binvars.add(var)
 
-        t_0 = clock()
+        t_0 = process_time()
         status, isol = ilp(c=cvxopt.matrix(c),
                            G=cvxopt.spmatrix(G.data,
                                              G.row,
@@ -46,7 +46,7 @@ class JppsGlpkIlp(Jpps):
                            b=cvxopt.matrix(b),
                            I=binvars,
                            B=binvars)
-        t_opt = clock() - t_0
+        t_opt = process_time() - t_0
         self.solns[k] = self._parse(isol)
         if cpu_time:
             return t_opt
