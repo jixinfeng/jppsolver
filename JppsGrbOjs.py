@@ -47,20 +47,41 @@ class JppsGrbOjs(Jpps):
         G_cut = self._part_to_cut(part_vert)
         G_ext = self.graph_apx.subgraph(list(set.union(*[set(self.graph_apx.neighbors(node))
                                                          for node in G_cut.nodes()])))
-
-        Nei = nx.adjacency_matrix(G_ext, nodelist=G_ext.nodes()).todense() + np.diag(np.ones(G_ext.order()))
+        if circles:
+            Nei = nx.adj_matrix(G_ext, nodelist=G_ext.nodes()).todense()
+        else:
+            Nei = nx.adj_matrix(G_ext, nodelist=G_ext.nodes()).todense() + np.diag(np.ones(G_ext.order()))
 
         node_map = {}
         node_inverse_map = {}
+        n_nodes = 0 # number of network nodes in G_ext
+        n_sjc = 0   # number of sjcs in G_ext
         for m, n in enumerate(G_ext.nodes()):
+            # m is the node label in Nei matrix
+            # n is the node label in G, G_cut, G_ext
             node_map[m] = n
             node_inverse_map[n] = m
+            if n < self.graph.order():
+                n_nodes += 1
+            else:
+                n_sjc += 1
 
-        jammer_vars = model.addVars(self.graph_apx.order(),
-                                    lb=0,
-                                    up=1,
-                                    vtype=gurobi.GRB.BINARY,
-                                    name="jammer")
+        if circles:
+            jammer_vars = model.addVars(
+                n_sjc,
+                lb=0,
+                up=1,
+                vtype=gurobi.GRB.BINARY,
+                name="jammer"
+            )
+        else:
+            jammer_vars = model.addVars(
+                G_ext.order(),
+                lb=0,
+                up=1,
+                vtype=gurobi.GRB.BINARY,
+                name="jammer"
+            )
 
         # set objective function
         # minimize the number of jammer needed
@@ -72,9 +93,14 @@ class JppsGrbOjs(Jpps):
 
         # add ieq (2)
         # each edge in E_s has at least one endpoint covered by a jammer
-        model.addConstrs((gurobi.LinExpr([(Nei[node_inverse_map[p], i] + Nei[node_inverse_map[q], i], jammer_vars[i])
-                                          for i in range(G_ext.order())]) >= 1
-                          for p, q in G_cut.edges()), name="ieq2")
+        if circles:
+            model.addConstrs((gurobi.LinExpr([(Nei[node_inverse_map[p], i + n_nodes] + Nei[node_inverse_map[q], i + n_nodes], jammer_vars[i])
+                                              for i in range(len(jammer_vars))]) >= 1
+                              for p, q in G_cut.edges()), name="ieq2")
+        else:
+            model.addConstrs((gurobi.LinExpr([(Nei[node_inverse_map[p], i] + Nei[node_inverse_map[q], i], jammer_vars[i])
+                                              for i in range(G_ext.order())]) >= 1
+                              for p, q in G_cut.edges()), name="ieq2")
 
         model.update()
 
@@ -85,7 +111,18 @@ class JppsGrbOjs(Jpps):
         model.optimize()
         t_opt = process_time() - t_0
 
-        soln = [node_map[i] for i, var in enumerate(model.getVars()) if int(var.x) == 1]
+        if circles:
+            # WITH SJCs
+            # element in solution means the index of disk in SJCs
+            # which is the `i` in
+            # for i, circle in enumerate(sorted(circles_dict.values())
+            soln = [node_map[i + n_nodes] - self.graph.order() for i, var in enumerate(model.getVars()) if int(var.x) == 1]
+        else:
+            # WITHOUT SJCs
+            # element in solution means the index of node in G
+            # which is the `i` in
+            # for i in G.nodes()
+            soln = [node_map[i] for i, var in enumerate(model.getVars()) if int(var.x) == 1]
 
         assert model.status == 2
 

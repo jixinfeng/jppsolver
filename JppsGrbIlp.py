@@ -163,6 +163,15 @@ class JppsGrbIlp(Jpps):
         assert model.status == 2
 
         soln = [i for i, var in enumerate(model.getVars()[:len(jammer_vars)]) if int(var.x) == 1]
+        # WITH SJCs
+        # element in solution means the index of disk in SJCs
+        # which is the `i` in
+        # for i, circle in enumerate(sorted(circles_dict.values())
+
+        # WITHOUT SJCs
+        # element in solution means the index of node in G
+        # which is the `i` in
+        # for i in G.nodes()
         self.solns[num_cluster] = soln
 
         if cpu_time:
