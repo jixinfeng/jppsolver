@@ -43,24 +43,30 @@ class JppsGrbOjs(Jpps):
                                                    self.jam_radius,
                                                    pos=pos_apx)
 
+        if circles:
+            Nei = nx.adj_matrix(self.graph_apx, nodelist=range(len(pos_apx)))
+        else:
+            Nei = nx.adj_matrix(self.graph_apx, nodelist=range(len(pos_apx))) + np.diag(np.ones(len(pos_apx)))
+
+        # labels of each node in self.graph after after KMeans
         part_vert = self._spectral_cut(num_cluster)
+
+        # subgraph of self.graph induced by edges (u, v) s.t. part_vert[u] != part_vert[v]
         G_cut = self._part_to_cut(part_vert)
+
+        # subgraph of self.graph_apx induced by neighbors of nodes in G_cut in graph_apx
+        # in other words, place a jammer at any node in G_ext will be able to break at least one edge in G_cut
         G_ext = self.graph_apx.subgraph(list(set.union(*[set(self.graph_apx.neighbors(node))
                                                          for node in G_cut.nodes()])))
-        if circles:
-            Nei = nx.adj_matrix(G_ext, nodelist=G_ext.nodes()).todense()
-        else:
-            Nei = nx.adj_matrix(G_ext, nodelist=G_ext.nodes()).todense() + np.diag(np.ones(G_ext.order()))
 
-        node_map = {}
-        node_inverse_map = {}
-        n_nodes = 0 # number of network nodes in G_ext
-        n_sjc = 0   # number of sjcs in G_ext
-        for m, n in enumerate(G_ext.nodes()):
-            # m is the node label in Nei matrix
-            # n is the node label in G, G_cut, G_ext
+        node_map = {}           # idx in G_ext -> idx in self.graph
+        n_nodes = 0             # number of network nodes in G_ext
+        n_sjc = 0               # number of sjcs in G_ext
+
+        for m, n in enumerate(sorted(G_ext.nodes())):
+            # m or m - n_nodes is the node label in jammer_vars
+            # n is the node label in G, G_cut, G_ext, Nei (neighbor matrix)
             node_map[m] = n
-            node_inverse_map[n] = m
             if n < self.graph.order():
                 n_nodes += 1
             else:
@@ -94,11 +100,11 @@ class JppsGrbOjs(Jpps):
         # add ieq (2)
         # each edge in E_s has at least one endpoint covered by a jammer
         if circles:
-            model.addConstrs((gurobi.LinExpr([(Nei[node_inverse_map[p], i + n_nodes] + Nei[node_inverse_map[q], i + n_nodes], jammer_vars[i])
+            model.addConstrs((gurobi.LinExpr([(Nei[p, node_map[i + n_nodes]] + Nei[q, node_map[i + n_nodes]], jammer_vars[i])
                                               for i in range(len(jammer_vars))]) >= 1
                               for p, q in G_cut.edges()), name="ieq2")
         else:
-            model.addConstrs((gurobi.LinExpr([(Nei[node_inverse_map[p], i] + Nei[node_inverse_map[q], i], jammer_vars[i])
+            model.addConstrs((gurobi.LinExpr([(Nei[p, node_map[i]] + Nei[q, node_map[i]], jammer_vars[i])
                                               for i in range(G_ext.order())]) >= 1
                               for p, q in G_cut.edges()), name="ieq2")
 
@@ -147,11 +153,6 @@ class JppsGrbOjs(Jpps):
 
         lap = nx.normalized_laplacian_matrix(self.graph).todense()
         e_values, e_vectors = eigh(lap)
-
-        # eigs = {i: tuple(e_vectors[i, j + 1]
-        #                  for j in range(dimension))
-        #         for i in range(self.graph.order())}
-        # X = np.array([e_coords[k] for k in range(len(e_coords))])
 
         e_coordinates = np.array([[e_vectors[i, j + 1]
                                    for j in range(dimension)]
